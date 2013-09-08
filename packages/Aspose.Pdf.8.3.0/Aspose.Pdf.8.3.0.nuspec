@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Aspose.Pdf</id>
+    <version>8.3.0</version>
+    <title>Aspose.Pdf for .NET</title>
+    <authors>Aspose</authors>
+    <owners>Aspose</owners>
+    <licenseUrl>http://www.aspose.com/corporate/purchase/end-user-license-agreement.aspx</licenseUrl>
+    <projectUrl>http://www.aspose.com/categories/.net-components/aspose.pdf-for-.net/default.aspx</projectUrl>
+    <iconUrl>http://www.aspose.com/images/products/dotnet/Aspose.Pdf_128x128.png</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Aspose.Pdf for .NET is a PDF document creation and manipulation component that enables your .NET applications to read, write and manipulate existing PDF documents without using Adobe Acrobat. It also allows you to create forms and manage form fields embedded in a PDF document. This component is written in managed C# and it allows developers to add PDF creation and manipulation functionality to their Microsoft .NET applications (WinForms, ASP.NET and .NET Compact Framework).
+	Aspose.Pdf for .NET is affordable and offers an incredible wealth of features including PDF compression options; table creation and manipulation; support for graph objects; extensive hyperlink functionality; extended security controls; custom font handling; integration with data sources; add or remove bookmarks; create table of contents; add, update, delete attachments and annotations; import or export PDF form data; add, replace or remove text and images; split, concatenate, extract or inset pages; transform pages to image; print PDF documents and much more.</description>
+    <summary>Aspose.Pdf for .NET is an amazing component which provides the feature to create and manipulate PDF documents.</summary>
+    <releaseNotes>This release introduces the features, enhancements and bug fixes as detailed below:
+
+New Features
+PDFNEWNET-11337	Repair non-standard PDF files and convert to valid PDF files
+PDFNEWNET-33486	PDF to DOC conversion using Streams
+PDFNEWNET-33864	Add TOC in existing PDF documents
+PDFNEWNET-35481	Implement margin support for TextParagraph
+PDFNEWNET-33544	Allow to pass font as a stream
+
+Enhancements
+PDFNEWNET-34786	Text to PDF is slow or hangs CPUPDFNEWNET
+PDFNEWNET-35357	Performance issue when building PDF with HTML tags
+PDFNEWNET-35520	Slow Performance when creating big Text in PDF file
+PDFNEWNET-34930	TXT to PDF: Conversion process is taking too much time
+
+Exceptions
+PDFNEWNET-33701	OutOfMemory exception is occurring when creating large PDF
+PDFNEWNET-35226	HTML to PDF - StackOverFlow is occurring during conversion process
+PDFNEWNET-35259	PDF to XPS - OutOfMemoryException during conversion
+PDFNEWNET-35300	NullReferenceException on PageEditor.GetPageSize
+PDFNEWNET-35362	While converting PDF to TIFF, IndexOutOfRangeException thrown
+PDFNEWNET-35474	NotImplementedException thrown while extracting bookmarks
+
+Bugs
+PDFNEWNET-32755	Creation and Modified date of PDF setting problem
+PDFNEWNET-34469	PDF to tiff will loose the bold text
+PDFNEWNET-35186	Problem while creating PDF Portfolio
+PDFNEWNET-35222	SVG to PDF - font is not embedded in resultant file
+PDFNEWNET-35448	Problem converting PDF to PDF/A
+PDFNEWNET-35519	Pdf Form fill issue viewing in Adobe Reader 7
+PDFNEWNET-35524	File contents not appearing when embedding GnuMICR Font
+PDFNEWNET-35528	Problem importing comments from XFDF
+PDFNEWNET-35542	Pdf Form Fill flatten issue
+PDFNEWNET-35559	Import Annotations - Not all text lines of annotation are visible
+PDFNEWNET-35560	Import Annotations - Annotation background becomes transparent
+PDFNEWNET-35561	Import Annotations - Font error when opening resultant file
+PDFNEWNET-35562	Issues while converting XFA form to PDF/A
+PDFNEWNET-35539	HTML to PDF - list-style-type is ignored during conversion
+PDFNEWNET-35535	Issue when images in a PDF use ASCII85Decode
+PDFNEWNET-31684	saving resultant file to Stream, automatically closes the stream
+PDFNEWNET-35055	Update/edit an existing Pdf Portfolio
+PDFNEWNET-35087	XML Template not working with Aspose.Pdf for .NET 7.8.0
+PDFNEWNET-35246	TextAbsorber not recognizing text with actual spaces
+PDFNEWNET-35282	While converting PDF to XPS, size increased to almost 10 times
+PDFNEWNET-35311	XPS to PDF conversion, italic font style is not being rendered properly
+PDFNEWNET-35408	PDFA1B compliance test fails
+PDFNEWNET-35497	How to detect PDF document is corrupt
+PDFNEWNET-35500	GePageRect(bool consdierRotation) method not working correctly
+PDFNEWNET-35540	Corrupt Pdf file hangs the application
+PDFNEWNET-35563	Invalid table formatting in inline HTML to PDF conversion</releaseNotes>
+    <copyright>©Aspose 2002-2013. All Rights Reserved.</copyright>
+    <language />
+    <tags>Aspose.Pdf PDF XFA XPS TIFF PCL SVG HTML XML XSL-FO FDF XFDF PDF/A form Portfolio to DOC DOCX</tags>
+    <references>
+      <reference file="Aspose.Pdf.dll" />
+    </references>
+  </metadata>
+</package>
