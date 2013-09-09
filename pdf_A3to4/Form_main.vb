@@ -32,6 +32,13 @@ Public Class Form_main
         Me.Width = g_MeWidth_init
         Me.GroupBox_Progress.Visible = False
         Me.ListBox_A4pdfInOne.Visible = False
+
+        '隠しデータ設定
+        Me.TextBox_A4W.Text = PageSize.A4.Width.ToString()
+        Me.TextBox_A4H.Text = PageSize.A4.Height.ToString()
+        Me.TextBox_A3W.Text = PageSize.A3.Width.ToString()
+        Me.TextBox_A3H.Text = PageSize.A3.Height.ToString()
+
     End Sub
 
     '====================================================
@@ -161,7 +168,7 @@ Public Class Form_main
             End If
 
             'ファイル変換
-            bRet = SplitPdfByPage_A3toA4(inputFilePath, outputFilePath)
+            bRet = convertPDF(inputFilePath, outputFilePath, True)
 
             'progressbar
             pb1Val = pb1Val + 1
@@ -229,7 +236,7 @@ Public Class Form_main
             End If
 
             'ファイル変換
-            bRet = SplitPdfByPage_AsItIs(inputFilePath, outputFilePath)
+            bRet = convertPDF(inputFilePath, outputFilePath, False)
 
             'progressbar
             pb1Val = pb1Val + 1
@@ -264,7 +271,6 @@ Public Class Form_main
 
         terminationBeforeEnd = True
     End Function
-
 
     '====================================================
     'Check conditions before execute
@@ -310,8 +316,6 @@ Public Class Form_main
         'output directory
         Dim files As String() = System.IO.Directory.GetFiles(Me.TextBox_OutputDir.Text, _
                                                              "*", System.IO.SearchOption.AllDirectories)
-
-
         If files.Length > 0 Then
             Dim nRet As DialogResult
             nRet = MsgBox("There are some files or folders in the output directory." & _
@@ -322,10 +326,6 @@ Public Class Form_main
                 Exit Function
             End If
         End If
-
-
-
-
     End Function
 
 
@@ -376,25 +376,21 @@ Public Class Form_main
 
     End Function
 
+
+
+
     '========================================================
-    'Split a multipage PDF into single pages - A3 to A4 x 2
+    'convert main
     '--------------------------------------------------------
-    Private Function SplitPdfByPage_A3toA4(ByVal sourcePdf As String, _
-                                     ByVal baseNameOutPdf As String) As Boolean
+    Private Function convertPDF(ByVal sourcePdf As String, _
+                                  ByVal baseNameOutPdf As String, _
+                                  ByVal divA4 As Boolean) As Boolean
 
         Dim reader As iTextSharp.text.pdf.PdfReader = Nothing
         Dim readerPageCount As Integer = 0
         Dim readerCurrentPage As Integer = 1
-        Dim ext As String = Path.GetExtension(baseNameOutPdf)
-        Dim outfileName1 As String = String.Empty
-        Dim outfileName2 As String = String.Empty
-        Dim doc1 As iTextSharp.text.Document = Nothing
-        Dim doc2 As iTextSharp.text.Document = Nothing
-        Dim cb1 As PdfContentByte
-        Dim cb2 As PdfContentByte
-
-        Dim page1 As iTextSharp.text.pdf.PdfImportedPage = Nothing
-        Dim page2 As iTextSharp.text.pdf.PdfImportedPage = Nothing
+        Dim pageSizeID As Integer = 0
+        Dim bRet As Boolean
 
         Try
             '元PDFを取得
@@ -404,134 +400,150 @@ Public Class Form_main
             If readerPageCount < 1 Then
                 Throw New ArgumentException("Not enough pages in source pdf to split")
             Else
-
                 'progressbar
                 Dim pb2Val As Long = 0
                 Me.ProgressBar2.Value = pb2Val
                 Me.ProgressBar2.Maximum = readerPageCount
 
                 For i As Integer = 1 To readerPageCount
-                    '出力用ファイル名を2種類準備
-                    outfileName1 = baseNameOutPdf.Replace(ext, "_" & i.ToString("000") & "-1" & ext)
-                    outfileName2 = baseNameOutPdf.Replace(ext, "_" & i.ToString("000") & "-2" & ext)
+                    'page sizeを取得
+                    pageSizeID = chkPageSizeA4(reader, i)
 
-                    'A4サイズのdocインスタンスを生成
-                    doc1 = New iTextSharp.text.Document(PageSize.A4)
-                    doc2 = New iTextSharp.text.Document(PageSize.A4)
-
-                    'MSを使ってdocとwriterを関連付け(writer <- MS -> doc)
-                    Dim ms1 = New MemoryStream()
-                    Dim writer1 = PdfWriter.GetInstance(doc1, ms1)
-                    Dim ms2 = New MemoryStream()
-                    Dim writer2 = PdfWriter.GetInstance(doc2, ms2)
-
-                    'docを開き、cbに展開(cb = writer <- MS -> doc)
-                    doc1.Open()
-                    cb1 = writer1.DirectContent
-                    doc2.Open()
-                    cb2 = writer2.DirectContent
-
-                    page1 = writer1.GetImportedPage(reader, readerCurrentPage)
-                    page2 = writer2.GetImportedPage(reader, readerCurrentPage)
-
-                    'A3 h:841.89 w:1190.55
-                    'A4 h:841.89 w:595.276
-                    If page1.Width > 600 Then
-                        'pageをcbに入れる(reader <- page = cb = writer <- MS -> doc)
-                        cb1.AddTemplate(page1, 1.0F, 0, 0, 1.0F, 0, 0)
-                        doc1.Close()
-                        File.WriteAllBytes(outfileName1, ms1.GetBuffer())
-
-                        'pageをA4幅分左にずらして、cbに入れる
-                        cb2.AddTemplate(page2, 1.0F, 0, 0, 1.0F, -PageSize.A4.Width, 0)
-                        doc2.Close()
-                        File.WriteAllBytes(outfileName2, ms2.GetBuffer())
+                    '出力
+                    If divA4 = True And pageSizeID = 3 Then
+                        bRet = ExportPdfByPage_A3toA4(reader, i, baseNameOutPdf)
                     Else
-                        'pageをcbに入れる(reader <- page = cb = writer <- MS -> doc)
-                        cb1.AddTemplate(page1, 1.0F, 0, 0, 1.0F, 0, 0)
-                        doc1.Close()
-                        File.WriteAllBytes(outfileName1, ms1.GetBuffer())
+                        bRet = SplitPdfByPage_AsItIs(reader, i, baseNameOutPdf)
                     End If
+
                     readerCurrentPage += 1
-
-                    'progressbar
-                    pb2Val = pb2Val + 1
-                    Me.ProgressBar2.Value = pb2Val
-                    Me.ProgressBar2.Refresh()
-
-                    Me.Label_tgtPage.Text = "page... " & pb2Val & "/" & readerPageCount
-                    Me.Label_tgtPage.Refresh()
-
                 Next i
             End If
             reader.Close()
-            SplitPdfByPage_A3toA4 = True
+            convertPDF = True
         Catch ex As Exception
             Throw ex
-            SplitPdfByPage_A3toA4 = False
+            convertPDF = False
         End Try
     End Function
+
+    '====================================================
+    'Get page size
+    '幅だけで判断　誤差 10 pixels
+    '1:A4サイズより小さい
+    '2:A4サイズ
+    '3:A4サイズより大きい
+    '----------------------------------------------------
+    Private Function chkPageSizeA4(ByVal reader As PdfReader, _
+                                   ByVal pageNo As Long) As Integer
+        Dim PageSize As Rectangle = reader.GetPageSize(pageNo)
+
+        If PageSize.Width < CInt(Me.TextBox_A4W.Text) - 10 Then
+            chkPageSizeA4 = 1
+        ElseIf CInt(Me.TextBox_A4W.Text) - 10 <= PageSize.Width And _
+             PageSize.Width <= CInt(Me.TextBox_A4W.Text) + 10 Then
+            chkPageSizeA4 = 2
+        ElseIf CInt(Me.TextBox_A4W.Text) + 10 < PageSize.Width Then
+            chkPageSizeA4 = 3
+        Else
+            chkPageSizeA4 = 0
+        End If
+    End Function
+
+    '========================================================
+    'Split a multipage PDF into single pages - A3 to A4 x 2
+    '--------------------------------------------------------
+    Private Function ExportPdfByPage_A3toA4(ByVal reader As PdfReader, _
+                                            ByVal pageNo As Long, _
+                                            ByVal baseNameOutPdf As String
+                                            ) As Boolean
+        Try
+            '出力用ファイル名を2種類準備
+            Dim outfileName1 As String = String.Empty
+            Dim outfileName2 As String = String.Empty
+            Dim ext As String = Path.GetExtension(baseNameOutPdf)
+            outfileName1 = baseNameOutPdf.Replace(ext, "_" & pageNo.ToString("000") & "-1" & ext)
+            outfileName2 = baseNameOutPdf.Replace(ext, "_" & pageNo.ToString("000") & "-2" & ext)
+
+            'A4サイズのdocインスタンスを生成
+            Dim doc1 As iTextSharp.text.Document = Nothing
+            Dim doc2 As iTextSharp.text.Document = Nothing
+            doc1 = New iTextSharp.text.Document(PageSize.A4)
+            doc2 = New iTextSharp.text.Document(PageSize.A4)
+
+            'MSを使ってdocとwriterを関連付け(writer <- MS -> doc)
+            Dim ms1 = New MemoryStream()
+            Dim writer1 = PdfWriter.GetInstance(doc1, ms1)
+            Dim ms2 = New MemoryStream()
+            Dim writer2 = PdfWriter.GetInstance(doc2, ms2)
+
+            'docを開き、cbに展開(cb = writer <- MS -> doc)
+            Dim cb1 As PdfContentByte
+            Dim cb2 As PdfContentByte
+            doc1.Open()
+            cb1 = writer1.DirectContent
+            doc2.Open()
+            cb2 = writer2.DirectContent
+
+            'pageを取得
+            Dim page1 As iTextSharp.text.pdf.PdfImportedPage = Nothing
+            Dim page2 As iTextSharp.text.pdf.PdfImportedPage = Nothing
+            page1 = writer1.GetImportedPage(reader, pageNo)
+            page2 = writer2.GetImportedPage(reader, pageNo)
+
+            'pageをcbに入れる(reader <- page = cb = writer <- MS -> doc)
+            cb1.AddTemplate(page1, 1.0F, 0, 0, 1.0F, 0, 0)
+            doc1.Close()
+            File.WriteAllBytes(outfileName1, ms1.GetBuffer())
+
+            'pageをA4幅分左にずらして、cbに入れる
+            cb2.AddTemplate(page2, 1.0F, 0, 0, 1.0F, -PageSize.A4.Width, 0)
+            doc2.Close()
+            File.WriteAllBytes(outfileName2, ms2.GetBuffer())
+
+            ExportPdfByPage_A3toA4 = True
+        Catch ex As Exception
+            Throw ex
+            ExportPdfByPage_A3toA4 = False
+        End Try
+    End Function
+
 
     '========================================================
     'Split a multipage PDF into single pages - keep original page size
     '--------------------------------------------------------
-    Private Function SplitPdfByPage_AsItIs(ByVal sourcePdf As String, _
-                                  ByVal baseNameOutPdf As String) As Boolean
-
-        Dim reader As iTextSharp.text.pdf.PdfReader = Nothing
-        Dim readerPageCount As Integer = 0
-        Dim readerCurrentPage As Integer = 1
-        Dim ext As String = Path.GetExtension(baseNameOutPdf)
-        Dim outfileName As String = String.Empty
-        Dim page As iTextSharp.text.pdf.PdfImportedPage = Nothing
-        Dim doc As iTextSharp.text.Document = Nothing
-        Dim pdfCpy As iTextSharp.text.pdf.PdfCopy = Nothing
+    Private Function SplitPdfByPage_AsItIs(ByVal reader As PdfReader, _
+                                            ByVal pageNo As Long, _
+                                            ByVal baseNameOutPdf As String
+                                            ) As Boolean
 
         Try
-            '元PDFを取得
-            reader = New iTextSharp.text.pdf.PdfReader(sourcePdf)
-            readerPageCount = reader.NumberOfPages
+            '出力用ファイル名
+            Dim outfileName As String = String.Empty
+            Dim ext As String = Path.GetExtension(baseNameOutPdf)
+            outfileName = baseNameOutPdf.Replace(ext, "_" & pageNo.ToString("000") & ext)
 
-            If readerPageCount < 1 Then
-                Throw New ArgumentException("Not enough pages in source pdf to split")
-            Else
-                'progressbar
-                Dim pb2Val As Long = 0
-                Me.ProgressBar2.Value = pb2Val
-                Me.ProgressBar2.Maximum = readerPageCount
+            'A4サイズのDOCのCopy用インスタンスを生成()
+            Dim doc As iTextSharp.text.Document = Nothing
+            doc = New iTextSharp.text.Document(PageSize.A4)
+            Dim pdfCpy As iTextSharp.text.pdf.PdfCopy = Nothing
+            pdfCpy = New iTextSharp.text.pdf.PdfCopy(doc, New FileStream(outfileName, FileMode.Create))
+            doc.Open()
 
-                For i As Integer = 1 To readerPageCount
-                    outfileName = baseNameOutPdf.Replace(ext, "_" & i.ToString("000") & ext)
+            'pageを取得
+            Dim page As iTextSharp.text.pdf.PdfImportedPage = Nothing
+            page = pdfCpy.GetImportedPage(reader, pageNo)
 
-                    'A4サイズのDOCインスタンスを生成
-                    'doc = New iTextSharp.text.Document(reader.GetPageSizeWithRotation(readerCurrentPage))
-                    doc = New iTextSharp.text.Document(PageSize.A4)
-                    pdfCpy = New iTextSharp.text.pdf.PdfCopy(doc, New FileStream(outfileName, FileMode.Create))
-                    doc.Open()
+            'pageを追加し、Docを閉じる
+            pdfCpy.AddPage(page)
+            doc.Close()
 
-                    page = pdfCpy.GetImportedPage(reader, readerCurrentPage)
-                    pdfCpy.AddPage(page)
-                    readerCurrentPage += 1
-                    doc.Close()
-
-                    'progressbar
-                    pb2Val = pb2Val + 1
-                    Me.ProgressBar2.Value = pb2Val
-                    Me.ProgressBar2.Refresh()
-
-                    Me.Label_tgtPage.Text = "page... " & pb2Val & "/" & readerPageCount
-                    Me.Label_tgtPage.Refresh()
-                Next i
-            End If
-            reader.Close()
             SplitPdfByPage_AsItIs = True
-
         Catch ex As Exception
             Throw ex
             SplitPdfByPage_AsItIs = False
         End Try
     End Function
-
 
     '========================================================
     'Check All

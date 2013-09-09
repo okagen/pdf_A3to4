@@ -42,6 +42,15 @@ Partial Class Form_main
         Me.Button_UnchkAll = New System.Windows.Forms.Button()
         Me.Label_ChkFileCount = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.TextBox_A4W = New System.Windows.Forms.TextBox()
+        Me.TextBox_A4H = New System.Windows.Forms.TextBox()
+        Me.Label5 = New System.Windows.Forms.Label()
+        Me.Label6 = New System.Windows.Forms.Label()
+        Me.TextBox_A3H = New System.Windows.Forms.TextBox()
+        Me.TextBox_A3W = New System.Windows.Forms.TextBox()
+        Me.Label7 = New System.Windows.Forms.Label()
+        Me.Label8 = New System.Windows.Forms.Label()
         Me.GroupBox_Progress.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -52,6 +61,7 @@ Partial Class Form_main
         Me.TextBox_InputDir.Name = "TextBox_InputDir"
         Me.TextBox_InputDir.Size = New System.Drawing.Size(529, 24)
         Me.TextBox_InputDir.TabIndex = 0
+        Me.TextBox_InputDir.Text = "C:\Users\10007434\Desktop\input"
         '
         'Label1
         '
@@ -90,6 +100,7 @@ Partial Class Form_main
         Me.TextBox_OutputDir.Name = "TextBox_OutputDir"
         Me.TextBox_OutputDir.Size = New System.Drawing.Size(529, 24)
         Me.TextBox_OutputDir.TabIndex = 3
+        Me.TextBox_OutputDir.Text = "C:\Users\10007434\Desktop\output"
         '
         'Label2
         '
@@ -249,12 +260,94 @@ Partial Class Form_main
         Me.Label3.TabIndex = 18
         Me.Label3.Text = "Split a multipage PDF into single pages"
         '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(645, 62)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(25, 12)
+        Me.Label4.TabIndex = 19
+        Me.Label4.Text = "A4 :"
+        '
+        'TextBox_A4W
+        '
+        Me.TextBox_A4W.Location = New System.Drawing.Point(676, 59)
+        Me.TextBox_A4W.Name = "TextBox_A4W"
+        Me.TextBox_A4W.Size = New System.Drawing.Size(36, 19)
+        Me.TextBox_A4W.TabIndex = 20
+        '
+        'TextBox_A4H
+        '
+        Me.TextBox_A4H.Location = New System.Drawing.Point(735, 59)
+        Me.TextBox_A4H.Name = "TextBox_A4H"
+        Me.TextBox_A4H.Size = New System.Drawing.Size(36, 19)
+        Me.TextBox_A4H.TabIndex = 21
+        '
+        'Label5
+        '
+        Me.Label5.AutoSize = True
+        Me.Label5.Location = New System.Drawing.Point(718, 62)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(11, 12)
+        Me.Label5.TabIndex = 22
+        Me.Label5.Text = "x"
+        '
+        'Label6
+        '
+        Me.Label6.AutoSize = True
+        Me.Label6.Location = New System.Drawing.Point(718, 87)
+        Me.Label6.Name = "Label6"
+        Me.Label6.Size = New System.Drawing.Size(11, 12)
+        Me.Label6.TabIndex = 26
+        Me.Label6.Text = "x"
+        '
+        'TextBox_A3H
+        '
+        Me.TextBox_A3H.Location = New System.Drawing.Point(735, 84)
+        Me.TextBox_A3H.Name = "TextBox_A3H"
+        Me.TextBox_A3H.Size = New System.Drawing.Size(36, 19)
+        Me.TextBox_A3H.TabIndex = 25
+        '
+        'TextBox_A3W
+        '
+        Me.TextBox_A3W.Location = New System.Drawing.Point(676, 84)
+        Me.TextBox_A3W.Name = "TextBox_A3W"
+        Me.TextBox_A3W.Size = New System.Drawing.Size(36, 19)
+        Me.TextBox_A3W.TabIndex = 24
+        '
+        'Label7
+        '
+        Me.Label7.AutoSize = True
+        Me.Label7.Location = New System.Drawing.Point(645, 87)
+        Me.Label7.Name = "Label7"
+        Me.Label7.Size = New System.Drawing.Size(25, 12)
+        Me.Label7.TabIndex = 23
+        Me.Label7.Text = "A3 :"
+        '
+        'Label8
+        '
+        Me.Label8.AutoSize = True
+        Me.Label8.Location = New System.Drawing.Point(627, 36)
+        Me.Label8.Name = "Label8"
+        Me.Label8.Size = New System.Drawing.Size(146, 12)
+        Me.Label8.TabIndex = 27
+        Me.Label8.Text = "Paper Size in Pixels (72ppi)"
+        '
         'Form_main
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.Color.White
-        Me.ClientSize = New System.Drawing.Size(632, 560)
+        Me.ClientSize = New System.Drawing.Size(792, 560)
+        Me.Controls.Add(Me.Label8)
+        Me.Controls.Add(Me.Label6)
+        Me.Controls.Add(Me.TextBox_A3H)
+        Me.Controls.Add(Me.TextBox_A3W)
+        Me.Controls.Add(Me.Label7)
+        Me.Controls.Add(Me.Label5)
+        Me.Controls.Add(Me.TextBox_A4H)
+        Me.Controls.Add(Me.TextBox_A4W)
+        Me.Controls.Add(Me.Label4)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.Label_ChkFileCount)
         Me.Controls.Add(Me.Button_UnchkAll)
@@ -298,5 +391,14 @@ Partial Class Form_main
     Friend WithEvents Button_UnchkAll As System.Windows.Forms.Button
     Friend WithEvents Label_ChkFileCount As System.Windows.Forms.Label
     Friend WithEvents Label3 As System.Windows.Forms.Label
+    Friend WithEvents Label4 As System.Windows.Forms.Label
+    Friend WithEvents TextBox_A4W As System.Windows.Forms.TextBox
+    Friend WithEvents TextBox_A4H As System.Windows.Forms.TextBox
+    Friend WithEvents Label5 As System.Windows.Forms.Label
+    Friend WithEvents Label6 As System.Windows.Forms.Label
+    Friend WithEvents TextBox_A3H As System.Windows.Forms.TextBox
+    Friend WithEvents TextBox_A3W As System.Windows.Forms.TextBox
+    Friend WithEvents Label7 As System.Windows.Forms.Label
+    Friend WithEvents Label8 As System.Windows.Forms.Label
 
 End Class
