@@ -13,22 +13,25 @@ Imports iTextSharp.text.pdf.parser 'Content Parser
 
 Public Class Form_main
 
+    Dim g_MeWidth_init As Integer = 646
+    Dim g_MeHeight_init As Integer = 371
+    Dim g_MeWidth_inPrg As Integer = 646
+    Dim g_MeHeight_inPrg As Integer = 597
+
     '====================================================
     'When the main form is loaded
     '----------------------------------------------------
     Private Sub Form_main_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Dim bRet As Boolean
-        bRet = updateFileList(Me.TextBox_InputDir, Me.ListBox_A3pdf)
-        bRet = updateFileList(Me.TextBox_OutputDir, Me.ListBox_A4pdfInOne)
 
+        '画面初期設定
+        bRet = updateFileList(Me.TextBox_InputDir, Me.CheckedListBox_orgPdf)
         Me.ProgressBar1.Value = 0
         Me.ProgressBar2.Value = 0
-
-        Me.Height = 356
+        Me.Height = g_MeHeight_init
+        Me.Width = g_MeWidth_init
         Me.GroupBox_Progress.Visible = False
-
         Me.ListBox_A4pdfInOne.Visible = False
-
     End Sub
 
     '====================================================
@@ -37,6 +40,8 @@ Public Class Form_main
     Private Function updateFileList(ByVal txtBox As Windows.Forms.TextBox, _
                                     ByVal lstBox As Windows.Forms.ListBox) As Boolean
         Dim files As String()
+        Dim i As Long
+        Dim fileSubPath As String
 
         On Error Resume Next
         files = System.IO.Directory.GetFiles(txtBox.Text, _
@@ -44,14 +49,17 @@ Public Class Form_main
                                              System.IO.SearchOption.AllDirectories)
         If Not IsNothing(files) Then
             lstBox.Items.Clear()
-            lstBox.Items.AddRange(files)
+
+            For i = 0 To files.Length - 1 Step 1
+                fileSubPath = files(i).Substring(txtBox.Text.Count)
+                lstBox.Items.Add(fileSubPath)
+            Next i
+
             updateFileList = True
         Else
             updateFileList = False
         End If
-
         lstBox.Refresh()
-
     End Function
 
     '====================================================
@@ -62,8 +70,10 @@ Public Class Form_main
         Dim strDialogResults As String = SetBrowsePath("Browse for Input Directory", _
                                                        Me.TextBox_InputDir.Text)
         If Not (strDialogResults Is Nothing) Then
+            'TextBoxに表示
             Me.TextBox_InputDir.Text = strDialogResults
-            bRet = updateFileList(Me.TextBox_InputDir, Me.ListBox_A3pdf)
+            'ファイルリストの更新
+            bRet = updateFileList(Me.TextBox_InputDir, Me.CheckedListBox_orgPdf)
         End If
     End Sub
 
@@ -74,9 +84,10 @@ Public Class Form_main
         Dim bRet As Boolean
         Dim strDialogResults As String = SetBrowsePath("Browse for Output Directory", _
                                                        Me.TextBox_OutputDir.Text)
-
         If Not (strDialogResults Is Nothing) Then
+            'TextBoxに表示
             Me.TextBox_OutputDir.Text = strDialogResults
+            'ファイルリストの更新
             bRet = updateFileList(Me.TextBox_OutputDir, Me.ListBox_A4pdfInOne)
         End If
     End Sub
@@ -110,39 +121,38 @@ Public Class Form_main
     '----------------------------------------------------
     Private Sub Button_Convert_A3toA4_Click(sender As Object, e As EventArgs) Handles Button_Convert_A3toA4.Click
         Dim bRet As Boolean
-        Dim inputFileSubDir As String
-        Dim inputFileName As String
-        Dim outputFileDir As String
-        Dim outFileName As String
-        Dim outFilePath As String
+
+        '条件チェック
+        If Not chkConditionBeforeExecute() Then
+            Exit Sub
+        End If
+
+        Dim inputFilePath As String = String.Empty
+        Dim inputFileName As String = String.Empty
+        Dim outputFileDir As String = String.Empty
+        Dim outputFileName As String = String.Empty
+        Dim outputFilePath As String = String.Empty
 
         Me.GroupBox_Progress.Visible = True
-        Me.Width = 573
-        Me.Height = 531
+        Me.Width = g_MeWidth_inPrg
+        Me.Height = g_MeHeight_inPrg
 
         'progressbar
         Dim pb1Val As Long = 0
         Me.ProgressBar1.Value = pb1Val
-        Me.ProgressBar1.Maximum = Me.ListBox_A3pdf.Items.Count
+        Me.ProgressBar1.Maximum = Me.CheckedListBox_orgPdf.CheckedItems.Count
 
-        For Each inputFilePath In Me.ListBox_A3pdf.Items
-
-            'ファイル名取得
-            inputFileName = Path.GetFileName(inputFilePath)
-            outFileName = inputFileName
-
-            Me.Label_tgtFile.Text = "converting... " & pb1Val + 1 & "/" & Me.ListBox_A3pdf.Items.Count & " : " & inputFileName
+        For Each inputFileSubPath In Me.CheckedListBox_orgPdf.CheckedItems
+            Me.Label_tgtFile.Text = "converting... " & pb1Val + 1 & "/" & Me.CheckedListBox_orgPdf.CheckedItems.Count & " : " & inputFileName
             Me.Label_tgtFile.Refresh()
 
-            'サブディレクトリ取得
-            inputFileSubDir = inputFilePath.ToString.Substring(Me.TextBox_InputDir.Text.Length + 1)
-            inputFileSubDir = inputFileSubDir.Substring(0, inputFileSubDir.Length - inputFileName.Length - 1)
-
-            '出力先ディレクトリ
-            outputFileDir = Me.TextBox_OutputDir.Text & "\" & inputFileSubDir & "\"
-
-            '出力ファイル名フルパス
-            outFilePath = Me.TextBox_OutputDir.Text & "\" & inputFileSubDir & "\" & outFileName
+            'ファイル名、出力パス等取得()
+            bRet = getOutputFilePath(inputFileSubPath, _
+                                     inputFilePath, _
+                                     inputFileName, _
+                                     outputFileName, _
+                                     outputFileDir, _
+                                     outputFilePath)
 
             '出力先ディレクトリ作成
             If System.IO.Directory.Exists(outputFileDir) Then
@@ -151,18 +161,13 @@ Public Class Form_main
             End If
 
             'ファイル変換
-            bRet = SplitPdfByPage_A3toA4(inputFilePath, outFilePath)
+            bRet = SplitPdfByPage_A3toA4(inputFilePath, outputFilePath)
 
             'progressbar
             pb1Val = pb1Val + 1
             Me.ProgressBar1.Value = pb1Val
             Me.ProgressBar1.Refresh()
 
-        Next
-
-        For Each inputFilePath In Me.ListBox_A3pdf.Items
-            inputFileName = Path.GetFileName(inputFilePath)
-            outFilePath = Me.TextBox_OutputDir.Text & "\test\" & inputFileName
         Next
 
         'ファイルリストの更新
@@ -172,10 +177,8 @@ Public Class Form_main
             MsgBox("complete!", MsgBoxStyle.OkOnly, "Split a multipage PDF into single pages")
         End If
 
-        Me.Label_tgtFile.Text = "*** " & Me.ListBox_A3pdf.Items.Count & " files are converted to " & Me.ListBox_A4pdfInOne.Items.Count & " files."
-        Me.Label_tgtFile.BackColor = Color.GreenYellow
-        Me.Label_tgtPage.Visible = False
-        Me.ListBox_A4pdfInOne.Visible = True
+        '終了処理
+        bRet = terminationBeforeEnd()
 
     End Sub
 
@@ -185,40 +188,39 @@ Public Class Form_main
     '----------------------------------------------------
     Private Sub Button_Convert_Click(sender As Object, e As EventArgs) Handles Button_Convert_AsItIs.Click
         Dim bRet As Boolean
-        Dim inputFileSubDir As String
-        Dim inputFileName As String
-        Dim outputFileDir As String
-        Dim outFileName As String
-        Dim outFilePath As String
+
+        '条件チェック
+        If Not chkConditionBeforeExecute() Then
+            Exit Sub
+        End If
+
+        Dim inputFilePath As String = String.Empty
+        Dim inputFileName As String = String.Empty
+        Dim outputFileDir As String = String.Empty
+        Dim outputFileName As String = String.Empty
+        Dim outputFilePath As String = String.Empty
 
         Me.GroupBox_Progress.Visible = True
-        Me.Width = 573
-        Me.Height = 531
-
+        Me.Width = g_MeWidth_inPrg
+        Me.Height = g_MeHeight_inPrg
 
         'progressbar
         Dim pb1Val As Long = 0
         Me.ProgressBar1.Value = pb1Val
-        Me.ProgressBar1.Maximum = Me.ListBox_A3pdf.Items.Count
+        Me.ProgressBar1.Maximum = Me.CheckedListBox_orgPdf.CheckedItems.Count
 
-        For Each inputFilePath In Me.ListBox_A3pdf.Items
-            'ファイル名取得
-            inputFileName = Path.GetFileName(inputFilePath)
-            outFileName = inputFileName
-
+        For Each inputFileSubPath In Me.CheckedListBox_orgPdf.CheckedItems
             'label
-            Me.Label_tgtFile.Text = "converting... " & pb1Val + 1 & "/" & Me.ListBox_A3pdf.Items.Count & " : " & inputFileName
+            Me.Label_tgtFile.Text = "converting... " & pb1Val + 1 & "/" & Me.CheckedListBox_orgPdf.CheckedItems.Count & " : " & inputFileName
             Me.Label_tgtFile.Refresh()
 
-            'サブディレクトリ取得
-            inputFileSubDir = inputFilePath.ToString.Substring(Me.TextBox_InputDir.Text.Length + 1)
-            inputFileSubDir = inputFileSubDir.Substring(0, inputFileSubDir.Length - inputFileName.Length - 1)
-
-            '出力先ディレクトリ
-            outputFileDir = Me.TextBox_OutputDir.Text & "\" & inputFileSubDir & "\"
-
-            '出力ファイル名フルパス
-            outFilePath = Me.TextBox_OutputDir.Text & "\" & inputFileSubDir & "\" & outFileName
+            'ファイル名、出力パス等取得()
+            bRet = getOutputFilePath(inputFileSubPath, _
+                                     inputFilePath, _
+                                     inputFileName, _
+                                     outputFileName, _
+                                     outputFileDir, _
+                                     outputFilePath)
 
             '出力先ディレクトリ作成
             If System.IO.Directory.Exists(outputFileDir) Then
@@ -227,7 +229,7 @@ Public Class Form_main
             End If
 
             'ファイル変換
-            bRet = SplitPdfByPage_AsItIs(inputFilePath, outFilePath)
+            bRet = SplitPdfByPage_AsItIs(inputFilePath, outputFilePath)
 
             'progressbar
             pb1Val = pb1Val + 1
@@ -236,10 +238,6 @@ Public Class Form_main
 
         Next
 
-        For Each inputFilePath In Me.ListBox_A3pdf.Items
-            inputFileName = Path.GetFileName(inputFilePath)
-            outFilePath = Me.TextBox_OutputDir.Text & "\test\" & inputFileName
-        Next
         'ファイルリストの更新
         bRet = updateFileList(Me.TextBox_OutputDir, Me.ListBox_A4pdfInOne)
 
@@ -248,12 +246,135 @@ Public Class Form_main
 
         End If
 
-        Me.Label_tgtFile.Text = "*** " & Me.ListBox_A3pdf.Items.Count & " files are converted to " & Me.ListBox_A4pdfInOne.Items.Count & " files."
+        '終了処理
+        bRet = terminationBeforeEnd()
+
+    End Sub
+
+    '====================================================
+    'Termination
+    '----------------------------------------------------
+    Private Function terminationBeforeEnd() As Boolean
+        Me.Label_tgtFile.Text = "*** " & Me.ListBox_A4pdfInOne.Items.Count & " files are contained in the output directory."
         Me.Label_tgtFile.BackColor = Color.GreenYellow
         Me.Label_tgtPage.Visible = False
         Me.ListBox_A4pdfInOne.Visible = True
 
-    End Sub
+        Me.Button_Exit.BackColor = Color.Aquamarine
+
+        terminationBeforeEnd = True
+    End Function
+
+
+    '====================================================
+    'Check conditions before execute
+    '----------------------------------------------------
+    Private Function chkConditionBeforeExecute() As Boolean
+        chkConditionBeforeExecute = True
+
+        'input directory
+        If Me.TextBox_InputDir.Text.Equals(String.Empty) Then
+            MsgBox("Please select input directory.", MsgBoxStyle.Critical, "error")
+            chkConditionBeforeExecute = False
+            Exit Function
+        End If
+
+        'input directory
+        If Not System.IO.Directory.Exists(Me.TextBox_InputDir.Text) Then
+            MsgBox("The input directory is not exist.", MsgBoxStyle.Critical, "error")
+            chkConditionBeforeExecute = False
+            Exit Function
+        End If
+
+        'input list
+        If Me.CheckedListBox_orgPdf.CheckedItems.Count < 1 Then
+            MsgBox("Please check more than one item to convert.", MsgBoxStyle.Critical, "error")
+            chkConditionBeforeExecute = False
+            Exit Function
+        End If
+
+        'output directory
+        If Me.TextBox_OutputDir.Text.Equals(String.Empty) Then
+            MsgBox("Please select output directory.", MsgBoxStyle.Critical, "error")
+            chkConditionBeforeExecute = False
+            Exit Function
+        End If
+
+        'output directory
+        If Not System.IO.Directory.Exists(Me.TextBox_OutputDir.Text) Then
+            MsgBox("The output directory is not exist.", MsgBoxStyle.Critical, "error")
+            chkConditionBeforeExecute = False
+            Exit Function
+        End If
+
+        'output directory
+        Dim files As String() = System.IO.Directory.GetFiles(Me.TextBox_OutputDir.Text, _
+                                                             "*", System.IO.SearchOption.AllDirectories)
+
+
+        If files.Length > 0 Then
+            Dim nRet As DialogResult
+            nRet = MsgBox("There are some files or folders in the output directory." & _
+                   "This functin will overwrite some files. Would you like to continue?", _
+                    MsgBoxStyle.YesNo, "Warning")
+            If nRet = DialogResult.No Then
+                chkConditionBeforeExecute = False
+                Exit Function
+            End If
+        End If
+
+
+
+
+    End Function
+
+
+    '====================================================
+    'get output path and filename from input file path
+    '----------------------------------------------------
+    Private Function getOutputFilePath(ByVal inputFileSubPath As String, _
+                                       ByRef inputFilePath As String, _
+                                       ByRef inputFileName As String, _
+                                       ByRef outputFileName As String, _
+                                       ByRef outputFileDir As String, _
+                                       ByRef outputFilePath As String _
+                                       ) As Boolean
+
+        Dim inputFileSubDirName As String = String.Empty
+        Try
+            'ファイル名取得
+            inputFileName = Path.GetFileName(inputFileSubPath)
+
+            '出力ファイル名＝入力ファイル名
+            outputFileName = inputFileName
+
+            'サブディレクトリ取得
+            If inputFileSubPath.Equals("\" & inputFileName) Then
+                inputFileSubDirName = String.Empty
+            Else
+                inputFileSubDirName = inputFileSubPath.Substring(1, inputFileSubPath.Length - inputFileName.Length - 2)
+            End If
+
+            '出力先ディレクトリ
+            If inputFileSubDirName.Equals(String.Empty) Then
+                outputFileDir = Me.TextBox_OutputDir.Text & "\"
+            Else
+                outputFileDir = Me.TextBox_OutputDir.Text & "\" & inputFileSubDirName & "\"
+            End If
+
+            '出力ファイル名フルパス
+            outputFilePath = outputFileDir & outputFileName
+
+            '入力ファイル名フルパス
+            inputFilePath = Me.TextBox_InputDir.Text & inputFileSubPath
+
+            getOutputFilePath = True
+        Catch ex As Exception
+            Throw ex
+            getOutputFilePath = False
+        End Try
+
+    End Function
 
     '========================================================
     'Split a multipage PDF into single pages - A3 to A4 x 2
@@ -283,7 +404,6 @@ Public Class Form_main
             If readerPageCount < 1 Then
                 Throw New ArgumentException("Not enough pages in source pdf to split")
             Else
-
 
                 'progressbar
                 Dim pb2Val As Long = 0
@@ -412,210 +532,34 @@ Public Class Form_main
         End Try
     End Function
 
-    Public Function Print_pdf_document(strFilePath As String)
-        ''====レジストリからAcrobat,AcrobatReaderのパス取得====
-        'Dim strRegPath As String
-        'Dim rKey As Microsoft.Win32.RegistryKey
-        ''キーを取得(最初にAcrobat,だめならAdobeReader)
-        'strRegPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe"
-        'rKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(strRegPath)
-        'If rKey Is Nothing Then
-        '    strRegPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"
-        '    rKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(strRegPath)
-        'End If
-        ''値(exeのパス)を取得(既定の値の場合は空文字指定)
-        'Dim location As String
-        'Try
-        '    '値(exeのパス)を取得(既定の値の場合は空文字指定)
-        '    location = DirectCast(rKey.GetValue(""), String)
-        'Catch ex As NullReferenceException
-        '    Throw New ApplicationException("AcrobatもしくはAdobeReaderがインストールされていないため、PDFファイルの印刷ができません。")
-        'Finally
-        '    '開いたレジストリキーを閉じる
-        '    rKey.Close()
-        'End Try
 
-        ''===Acrobatを起動し印刷===
-        'Dim filepath As String = "D:\print_test.pdf"
-        'Dim pro As New Process()
+    '========================================================
+    'Check All
+    '--------------------------------------------------------
+    Private Sub Button_chkAll_Click(sender As Object, e As EventArgs) Handles Button_chkAll.Click
+        Dim i As Long
+        For i = 0 To Me.CheckedListBox_orgPdf.Items.Count - 1
+            Me.CheckedListBox_orgPdf.SetItemChecked(i, True)
+        Next
+        Me.Label_ChkFileCount.Text = Me.CheckedListBox_orgPdf.CheckedItems.Count & " checked."
+    End Sub
 
-        ''.Net的書き方(C#でも可能な書き方)
-        ''Acrobatのフルパス設定
-        'pro.StartInfo.FileName = location
-        'pro.StartInfo.Verb = "open"
-        ''Acrobatのコマンドライン引数設定
-        'pro.StartInfo.Arguments = " /n /t " + filepath
-        'pro.StartInfo.WindowStyle = ProcessWindowStyle.Hidden
-        ''プロセスを新しいWindowで起動
-        'pro.StartInfo.CreateNoWindow = True
-        ''プロセス起動
-        'pro.Start()
-        ''プロセス終了
-        'pro.WaitForExit(5000)
-        'pro.Kill()
+    '========================================================
+    'Uncheck All
+    '--------------------------------------------------------
+    Private Sub Button_UnchkAll_Click(sender As Object, e As EventArgs) Handles Button_UnchkAll.Click
+        Dim i As Long
+        For i = 0 To Me.CheckedListBox_orgPdf.Items.Count - 1
+            Me.CheckedListBox_orgPdf.SetItemChecked(i, False)
+        Next
+        Me.Label_ChkFileCount.Text = Me.CheckedListBox_orgPdf.CheckedItems.Count & " checked."
+    End Sub
 
-
-        'VB的書き方
-        'Dim procID As Integer
-        'procID = Shell(location & " /n /t " & filepath)
-        'pro = Process.GetProcessById(procID)
-        'pro.WaitForExit(3000)
-        'pro.Kill()
-
-        '        On Error GoTo errHandler
-
-        '        Dim Error282Count As Integer  '' Count of "Can't open DDE channel" errors
-        '        Dim AcroDDEFailed As Boolean  '' Set to true if a DDE connection cannot be established
-        '        Dim sPDFPath As String        '' Path to a PDF file
-        '        Dim sCmd As String            '' DDE command
-        '        Dim lStatus As Long
-        '        Dim n As Integer
-        '        Const Max282Errors = 6
-        '        Dim sAcroPath As String       ' Path to acrobat, determined by FindExecutable
-        '        Dim bCloseAcrobat As Boolean  ' If we open acrobat, we will close it when we are done
-        '        Dim PDFArray As Object
-        '        Error282Count = Max282Errors      ' checks to see if acrobat is running
-        '        AcroDDEFailed = False             ' ErrHandler will set to true if Acro is not running
-        '        txtAcrobatDDE.LinkMode = 0        ' Close any current DDE Link
-        '        txtAcrobatDDE.LinkTopic = "acroview|control"    ' Acrobat's DDE Application|Topic
-        '        txtAcrobatDDE.LinkMode = 2        ' Try to establish 'Manual' DDE Link. This will fail
-        '        ' if Acrobat is not ready or running
-
-        '        'This will determine what the default printer is on the system
-        '        objPrinter = GetDefaultPrinter()
-
-        '        'This will set the default printer according to the settings in TNClerk
-        '        Call SetNewDefaultPrinter()
-
-        '        'Obtain the current settings the printer has
-        '        PreviousSettings = Printer.PaperSize
-
-        '        'Check to see if need to print legal or letter size
-        '        If Me.optLegal.Value = True Then
-        '            If Printer.PaperSize <> 5 Then
-        '                Call SetPaperSize(5)
-        '            End If
-        '        ElseIf Me.optLetter.Value = True Then
-        '            If Printer.PaperSize <> 1 Then
-        '                Call SetPaperSize(1)
-        '            End If
-        '        End If
-
-        '        ReDim PDFArray(0 To 0)
-        '        PDFArray(0) = strFilePath
-
-        '        If AcroDDEFailed = True Then
-        '            ' grab the first pdf path. We assume this file exists
-        '            sPDFPath = PDFArray(0)
-
-        '            '' Use the FindExecutable API function to grab the path to our PDF handler.
-        '    sAcroPath = String(128, 32)
-        '            lStatus = FindExecutable(sPDFPath, vbNullString, sAcroPath)
-        '            If lStatus <= 32 Then
-        '                MsgBox("Acrobat could not be found on this computer. Printing cancelled", vbCritical, "Problem")
-
-        '                Call ReturnDefaultPrinter()
-        '                Exit Function
-        '            End If
-
-        '            ' Launch the PDF handler
-        '            lStatus = Shell(sAcroPath, vbHide)
-        '            If (lStatus >= 0) And (lStatus <= 32) Then
-        '                MsgBox("An error occured launching Acrobat. Printing cancelled", vbCritical, "Problem")
-
-        '                Call ReturnDefaultPrinter()
-        '                Exit Function
-        '            End If
-        '            'Try to close Acrobat when we are done
-        '            bCloseAcrobat = True
-        '        End If
-
-        '        PauseFor 2  '' Lets take a break here to let Acrobat finish loading
-
-        '        Error282Count = 0       '' This time, we will allow all acceptable tries, as
-        '        AcroDDEFailed = False   '' Acrobat is running, but may be busy loading its modules
-        '        txtAcrobatDDE.LinkMode = 0
-        '        txtAcrobatDDE.LinkTopic = "acroview|control"
-        '        txtAcrobatDDE.LinkTimeout = 2500 ' 3 minute timeout delay
-        '        txtAcrobatDDE.LinkMode = 2
-
-        '        If AcroDDEFailed = True Then
-        '            MsgBox("An error occured connecting to Acrobat. Printing cancelled", vbCritical, "Problem")
-
-        '            Call ReturnDefaultPrinter()
-        '            Exit Function
-        '        End If
-
-        '        '' Send the PDF's to the printer.
-        '        For n = 0 To UBound(PDFArray)
-        '            '' We need to put the long filenames in quotes. Again, we assume these file exist
-        '            sPDFPath = PDFArray(n)
-        '            sCmd = "[FilePrintSilent(" & Chr(34) & sPDFPath & Chr(34) & ")]"
-        '            txtAcrobatDDE.LinkExecute sCmd
-        '        Next
-
-        '        If bCloseAcrobat = True Then
-        '            '' [AppExit()] causes memory errors with v6.0 and 6.1, so avoid closing these versions
-        '            If InStr(sAcroPath, "6.0") = 0 Then
-        '                sCmd = "[AppExit()]"
-        '                txtAcrobatDDE.LinkExecute sCmd
-        '            End If
-        '        End If
-
-        '        '' Close the DDE Connection
-        '        txtAcrobatDDE.LinkMode = 0
-
-        '        Call ReturnDefaultPrinter()
-        '        Exit Function
-
-        'errHandler:
-        '        If err.Number = 282 Then '' Can't open DDE channel
-        '            '' This error may happen because Acro is not fully loaded.
-        '            '' Give it Max282Errors attempts before returning AcroDDEFailed = True
-        '            Error282Count = Error282Count + 1
-        '            If Error282Count <= Max282Errors Then
-        '                PauseFor 3
-        '                Resume
-        '            Else
-        '                AcroDDEFailed = True
-        '                Resume Next
-        '            End If
-        '        End If
-
-        '        MsgBox "Error in PrintPDFs sub of " & Me.Name & " form. Error# " & err.Number & " " & err.Description & "."
-    End Function
-
-    'Private Function printA3toA4(ByVal filePath As String) As Boolean
-
-    '    'IAC objects
-    '    Dim pdDoc As Acrobat.CAcroPDDoc
-    '    Dim avDoc As Acrobat.CAcroAVDoc
-
-    '    avDoc = CreateObject("AcroExch.AVDoc")
-
-    '    avDoc.Open(filePath, "")
-    '    pdDoc = avDoc.GetPDDoc()
-    '    pdDoc.Open(filePath)
-
-    '    Dim pageCount As Long
-    '    pageCount = pdDoc.GetNumPages()
-    '    pdDoc.Close()
-
-    '    avDoc.PrintPagesSilentEx(0, _
-    '                       pageCount - 1, _
-    '                       2, _
-    '                       bBinaryOk:=False, _
-    '                       bShrinkToFit:=False, _
-    '                       bReverse:=False, _
-    '                       bFarEastFontOpt:=False, _
-    '                       bEmitHalftones:=False, _
-    '                       iPageOption:=-3)
-
-    '    avDoc.Close(bNoSave:=True)
-    '    printA3toA4 = True
-
-    'End Function
-
-
+    '========================================================
+    'CheckListBox
+    '--------------------------------------------------------
+    Private Sub CheckedListBox_orgPdf_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CheckedListBox_orgPdf.SelectedIndexChanged
+        Me.Label_ChkFileCount.Text = Me.CheckedListBox_orgPdf.CheckedItems.Count & " checked."
+    End Sub
 
 End Class
