@@ -5,6 +5,7 @@ A4サイズ、A3サイズが混在しているPDFファイルの各ページを�
 divide A3 in A4 x 2
 ----------  
   * A3サイズのページはA4サイズx2に分割し、それぞれを1PDFファイルとして出力。
+  * その他のサイズはそのまま1PDFファイルとして出力。(keep original page sizeと同様)
 
 keep original page size
 ----------  
