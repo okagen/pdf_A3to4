@@ -17,6 +17,11 @@ Public Class Form_main
     Dim g_MeHeight_init As Integer = 371
     Dim g_MeWidth_inPrg As Integer = 646
     Dim g_MeHeight_inPrg As Integer = 597
+    Dim g_A3w As Integer
+    Dim g_A3h As Integer
+    Dim g_A4w As Integer
+    Dim g_A4h As Integer
+
 
     '====================================================
     'When the main form is loaded
@@ -34,11 +39,14 @@ Public Class Form_main
         Me.ListBox_A4pdfInOne.Visible = False
 
         '隠しデータ設定
-        Me.TextBox_A4W.Text = PageSize.A4.Width.ToString()
-        Me.TextBox_A4H.Text = PageSize.A4.Height.ToString()
-        Me.TextBox_A3W.Text = PageSize.A3.Width.ToString()
-        Me.TextBox_A3H.Text = PageSize.A3.Height.ToString()
-
+        g_A4w = PageSize.A4.Width
+        g_A4h = PageSize.A4.Height
+        g_A3w = PageSize.A3.Height '横長にする為、高さを設定
+        g_A3h = PageSize.A3.Width  '横長にするため、幅を設定
+        Me.TextBox_A4W.Text = g_A4w
+        Me.TextBox_A4H.Text = g_A4h
+        Me.TextBox_A3W.Text = g_A3w
+        Me.TextBox_A3H.Text = g_A3h
     End Sub
 
     '====================================================
@@ -390,6 +398,8 @@ Public Class Form_main
         Dim readerPageCount As Integer = 0
         Dim readerCurrentPage As Integer = 1
         Dim pageSizeID As Integer = 0
+        Dim marginLR As Integer = 0
+        Dim marginUD As Integer = 0
         Dim bRet As Boolean
 
         Try
@@ -407,11 +417,11 @@ Public Class Form_main
 
                 For i As Integer = 1 To readerPageCount
                     'page sizeを取得
-                    pageSizeID = chkPageSizeA4(reader, i)
+                    bRet = chkPageSizeA4(reader, i, pageSizeID, marginLR, marginUD)
 
                     '出力
-                    If divA4 = True And pageSizeID = 3 Then
-                        bRet = ExportPdfByPage_A3toA4(reader, i, baseNameOutPdf)
+                    If divA4 = True And pageSizeID = 2 Then
+                        bRet = ExportPdfByPage_A3toA4(reader, i, baseNameOutPdf, marginLR, marginUD)
                     Else
                         bRet = SplitPdfByPage_AsItIs(reader, i, baseNameOutPdf)
                     End If
@@ -429,25 +439,54 @@ Public Class Form_main
 
     '====================================================
     'Get page size
-    '幅だけで判断　誤差 10 pixels
-    '1:A4サイズより小さい
-    '2:A4サイズ
-    '3:A4サイズより大きい
+    '前提：ページはA4縦、またはA3横とし、幅だけでページのサイズを判断する。
+    '1:A4サイズ
+    '   A4より小さいものはA4サイズとして判断
+    '   A3サイズより小さいものは余白付のA4サイズと判断する(誤差20 pixels)
+    '2:A3サイズ
+    '   A3サイズより大きいものは余白付のA3サイズと判断する
     '----------------------------------------------------
     Private Function chkPageSizeA4(ByVal reader As PdfReader, _
-                                   ByVal pageNo As Long) As Integer
+                                   ByVal pageNo As Long, _
+                                   ByRef sizeID As Integer, _
+                                   ByRef marginLR As Integer, _
+                                   ByRef marginUD As Integer _
+                                   ) As Boolean
         Dim PageSize As Rectangle = reader.GetPageSize(pageNo)
 
-        If PageSize.Width < CInt(Me.TextBox_A4W.Text) - 10 Then
-            chkPageSizeA4 = 1
-        ElseIf CInt(Me.TextBox_A4W.Text) - 10 <= PageSize.Width And _
-             PageSize.Width <= CInt(Me.TextBox_A4W.Text) + 10 Then
-            chkPageSizeA4 = 2
-        ElseIf CInt(Me.TextBox_A4W.Text) + 10 < PageSize.Width Then
-            chkPageSizeA4 = 3
+        If PageSize.Width < g_A3w - 20 Then
+            'A4 サイズ
+            sizeID = 1
+            '左右余白計算
+            If PageSize.Width < g_A4w Then
+                marginLR = 0
+            Else
+                marginLR = Math.Floor((PageSize.Width - g_A4w) / 2)
+            End If
+            '上下余白計算
+            If PageSize.Height < g_A4h Then
+                marginUD = 0
+            Else
+                marginUD = Math.Floor((PageSize.Height - g_A4h) / 2)
+            End If
         Else
-            chkPageSizeA4 = 0
+            'A3 サイズ
+            sizeID = 2
+            '左右余白計算
+            If PageSize.Width < g_A3w Then
+                marginLR = 0
+            Else
+                marginLR = Math.Floor((PageSize.Width - g_A3w) / 2)
+            End If
+            '上下余白計算
+            If PageSize.Height < g_A3h Then
+                marginUD = 0
+            Else
+                marginUD = Math.Floor((PageSize.Height - g_A3h) / 2)
+            End If
         End If
+
+        chkPageSizeA4 = True
     End Function
 
     '========================================================
@@ -455,7 +494,9 @@ Public Class Form_main
     '--------------------------------------------------------
     Private Function ExportPdfByPage_A3toA4(ByVal reader As PdfReader, _
                                             ByVal pageNo As Long, _
-                                            ByVal baseNameOutPdf As String
+                                            ByVal baseNameOutPdf As String, _
+                                            ByVal marginLR As Integer, _
+                                            ByVal marginUD As Integer _
                                             ) As Boolean
         Try
             '出力用ファイル名を2種類準備
@@ -492,12 +533,12 @@ Public Class Form_main
             page2 = writer2.GetImportedPage(reader, pageNo)
 
             'pageをcbに入れる(reader <- page = cb = writer <- MS -> doc)
-            cb1.AddTemplate(page1, 1.0F, 0, 0, 1.0F, 0, 0)
+            cb1.AddTemplate(page1, 1.0F, 0, 0, 1.0F, -marginLR, -marginUD)
             doc1.Close()
             File.WriteAllBytes(outfileName1, ms1.GetBuffer())
 
             'pageをA4幅分左にずらして、cbに入れる
-            cb2.AddTemplate(page2, 1.0F, 0, 0, 1.0F, -PageSize.A4.Width, 0)
+            cb2.AddTemplate(page2, 1.0F, 0, 0, 1.0F, -PageSize.A4.Width - marginLR, -marginUD)
             doc2.Close()
             File.WriteAllBytes(outfileName2, ms2.GetBuffer())
 
